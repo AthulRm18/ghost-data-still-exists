@@ -42,7 +42,7 @@ class UserIdentity:
         if not text:
             return False
         lower_text = text.lower()
-        if self.user_id.lower() in lower_text:
+        if re.search(r'\b' + re.escape(self.user_id.lower()) + r'\b', lower_text):
             return True
         for email in self.all_emails:
             if email in lower_text:
@@ -57,7 +57,7 @@ class UserIdentity:
             if len(name) > 3 and re.search(r'\b' + re.escape(name.lower()) + r'\b', lower_text):
                 return True
         for ref in self.customer_references:
-            if ref.lower() in lower_text:
+            if re.search(r'\b' + re.escape(ref.lower()) + r'\b', lower_text):
                 return True
         return False
 

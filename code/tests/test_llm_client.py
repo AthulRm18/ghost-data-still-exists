@@ -26,7 +26,7 @@ class TestLLMClient(unittest.TestCase):
         self.test_cache = Path(self.temp_dir.name) / "test_cache.json"
         self.client = LLMClient(
             api_key="mock_key_for_testing",
-            model_name="gemini-2.5-flash",
+            model_name="gemini-3.8-flash",
             ledger_file=self.test_ledger,
             replay_cache_file=self.test_cache,
         )

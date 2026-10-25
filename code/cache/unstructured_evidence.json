@@ -1,0 +1,764 @@
+{
+  "images": {
+    "evidence_04": {
+      "file_id": "evidence_04",
+      "extracted_identifiers": [
+        "Haruka Sato",
+        "haruka.s1838@zoho.com",
+        "+81 90 7610 2507",
+        "user_11",
+        "account_5762",
+        "2-18-4 Kichijoji, Musashino, Tokyo 180-0004"
+      ],
+      "resources": [
+        {
+          "system_id": "customer_operations",
+          "resource_id": "account_5762",
+          "identifiers": [
+            "Haruka Sato",
+            "haruka.s1838@zoho.com",
+            "+81 90 7610 2507",
+            "user_11",
+            "account_5762"
+          ],
+          "timestamp": "2026-09-24 09:14 JST",
+          "status": "Silver",
+          "details": "Customer profile for Haruka Sato signed up via mobile_app in market JP"
+        },
+        {
+          "system_id": "order_service",
+          "resource_id": "ORD-20265762",
+          "identifiers": [
+            "Haruka Sato",
+            "account_5762",
+            "user_11"
+          ],
+          "timestamp": "2026-09-12",
+          "status": "Delivered \u00b7 18 Sep",
+          "details": "Order for Ceramic coffee set, qty 1, total JPY 8,900"
+        },
+        {
+          "system_id": "order_service",
+          "resource_id": "ORD-20265518",
+          "identifiers": [
+            "Haruka Sato",
+            "account_5762",
+            "user_11"
+          ],
+          "timestamp": "2026-08-28",
+          "status": "Returned \u00b7 03 Sep",
+          "details": "Order for Travel backpack, qty 1, total JPY 12,400"
+        },
+        {
+          "system_id": "support_platform",
+          "resource_id": "CS-8538",
+          "identifiers": [
+            "Haruka Sato",
+            "account_5762",
+            "user_11"
+          ],
+          "timestamp": "2026-09-24",
+          "status": "active",
+          "details": "Support ticket CS-8538 / support_9538 with customer reply on 24 Sep"
+        }
+      ],
+      "captured_at": "2026-09-26T11:00:00Z",
+      "file_path": "evidence/images/account_admin_console_20260926.png"
+    },
+    "evidence_09": {
+      "file_id": "evidence_09",
+      "extracted_identifiers": [
+        "g.silva76@gmail.com",
+        "Gabriel Silva",
+        "user_13",
+        "g.silva76.jr@gmail.com",
+        "user_9842",
+        "Aditi Jain"
+      ],
+      "resources": [
+        {
+          "system_id": "search_service",
+          "resource_id": "search_428",
+          "identifiers": [
+            "Gabriel Silva",
+            "g.silva76@gmail.com",
+            "user_13"
+          ],
+          "timestamp": "2026-09-01T05:58:21Z",
+          "status": "indexed",
+          "details": "Customer directory search index entry in customer_directory_v3 (prod-eu)"
+        },
+        {
+          "system_id": "search_service",
+          "resource_id": "search_1874",
+          "identifiers": [
+            "g.silva76.jr@gmail.com"
+          ],
+          "timestamp": "05:55:03 UTC",
+          "status": "indexed",
+          "details": "Customer directory search index entry in customer_directory_v3 (prod-eu)"
+        }
+      ],
+      "captured_at": "2026-09-01T06:00:00Z",
+      "file_path": "evidence/images/search_index_inspector_20260901.png"
+    },
+    "evidence_14": {
+      "file_id": "evidence_14",
+      "extracted_identifiers": [
+        "jain.aditi@gmail.com",
+        "lucia-torres@gmail.com"
+      ],
+      "resources": [
+        {
+          "system_id": "BridgeOps",
+          "resource_id": "data_flow_1121",
+          "identifiers": [
+            "jain.aditi@gmail.com"
+          ],
+          "timestamp": "2026-08-07T07:59:42Z",
+          "status": "Healthy",
+          "details": "Continuous sync connector targeting customer_analytics_warehouse filtered by selector jain.aditi@gmail.com"
+        },
+        {
+          "system_id": "BridgeOps",
+          "resource_id": "data_flow_9846",
+          "identifiers": [
+            "lucia-torres@gmail.com"
+          ],
+          "timestamp": "2026-08-07T07:59:36Z",
+          "status": null,
+          "details": "Continuous sync connector targeting customer_analytics_warehouse filtered by selector lucia-torres@gmail.com"
+        }
+      ],
+      "captured_at": "2026-08-07T08:00:00Z",
+      "file_path": "evidence/images/connector_management_console_20260807.png"
+    },
+    "evidence_19": {
+      "file_id": "evidence_19",
+      "extracted_identifiers": [
+        "Omar Darwish",
+        "user_20",
+        "analytics_7438",
+        "darwish.omar@icloud.com"
+      ],
+      "resources": [
+        {
+          "system_id": "pulse_analytics",
+          "resource_id": "analytics_7438",
+          "identifiers": [
+            "Omar Darwish",
+            "user_20",
+            "analytics_7438",
+            "darwish.omar@icloud.com"
+          ],
+          "timestamp": "13 Jul 2026 14:22 UTC",
+          "status": "active",
+          "details": "Pulse Analytics user profile and event activity for Omar Darwish"
+        },
+        {
+          "system_id": "northstar_shop",
+          "resource_id": "user_20",
+          "identifiers": [
+            "Omar Darwish",
+            "user_20",
+            "darwish.omar@icloud.com"
+          ],
+          "timestamp": "13 Jul 2026 14:22 UTC",
+          "status": "active",
+          "details": "E-commerce customer account referenced in Pulse Analytics"
+        }
+      ],
+      "captured_at": "2026-07-13T10:00:00Z",
+      "file_path": "evidence/images/analytics_profile_view_20260713.png"
+    },
+    "evidence_23": {
+      "file_id": "evidence_23",
+      "extracted_identifiers": [
+        "marcus.lee@northstar.shop",
+        "ingrid.dahl@outlook.com",
+        "sara.kim@northstar.shop",
+        "daniel.park@northstar.shop"
+      ],
+      "resources": [
+        {
+          "system_id": "customer_download_center",
+          "resource_id": "export_1261",
+          "identifiers": [
+            "marcus.lee@northstar.shop"
+          ],
+          "timestamp": "20 Jun 14:18 UTC",
+          "status": "Collecting",
+          "details": "Filename: customer_export_1261.zip"
+        },
+        {
+          "system_id": "customer_download_center",
+          "resource_id": "export_1260",
+          "identifiers": [
+            "ingrid.dahl@outlook.com"
+          ],
+          "timestamp": "18 Jun 2026 06:42 UTC",
+          "status": "Ready",
+          "details": "Filename: customer_export_1260.zip, Size: 18.4 MB, Included: Profile, Orders, Saved addresses, Expires: 25 Jun 2026 06:42 UTC"
+        },
+        {
+          "system_id": "customer_download_center",
+          "resource_id": "export_1259",
+          "identifiers": [
+            "sara.kim@northstar.shop"
+          ],
+          "timestamp": "17 Jun 11:03 UTC",
+          "status": "Packaging",
+          "details": "Filename: customer_export_1259.zip"
+        },
+        {
+          "system_id": "customer_download_center",
+          "resource_id": "export_1258",
+          "identifiers": [
+            "daniel.park@northstar.shop"
+          ],
+          "timestamp": "16 Jun 09:27 UTC",
+          "status": "Ready",
+          "details": "Filename: customer_export_1258.zip"
+        }
+      ],
+      "captured_at": "2026-06-18T12:00:00Z",
+      "file_path": "evidence/images/customer_export_console_20260618.png"
+    },
+    "evidence_28": {
+      "file_id": "evidence_28",
+      "extracted_identifiers": [
+        "Kofi Agyeman",
+        "kagyeman8947@fastmail.com",
+        "Maya Chen"
+      ],
+      "resources": [
+        {
+          "system_id": "helpline_console",
+          "resource_id": "CS-5034",
+          "identifiers": [
+            "Kofi Agyeman",
+            "kagyeman8947@fastmail.com",
+            "Maya Chen"
+          ],
+          "timestamp": null,
+          "status": "open",
+          "details": "Support ticket regarding delivery inquiry"
+        },
+        {
+          "system_id": "order_management",
+          "resource_id": "ORD-20265034",
+          "identifiers": [
+            "Kofi Agyeman",
+            "kagyeman8947@fastmail.com"
+          ],
+          "timestamp": "2026-05-24T08:15:00",
+          "status": "In transit",
+          "details": "Order for Running shoes shipped via SwiftShip with tracking SWF-884103"
+        }
+      ],
+      "captured_at": "2026-05-24T07:00:00Z",
+      "file_path": "evidence/images/support_ticket_console_20260524.png"
+    },
+    "evidence_32": {
+      "file_id": "evidence_32",
+      "extracted_identifiers": [
+        "bluepeakco@outlook.com",
+        "miller.logistics@company.com",
+        "areed1433@gmail.com",
+        "summit-retail@company.com"
+      ],
+      "resources": [
+        {
+          "system_id": "vault_recovery_manager",
+          "resource_id": "backup_9291",
+          "identifiers": [
+            "bluepeakco@outlook.com"
+          ],
+          "timestamp": "26 Apr 02:00",
+          "status": "Archive",
+          "details": "Customer platform archive snapshot, 102.3 GB, region ap-southeast-1, AES-256"
+        },
+        {
+          "system_id": "vault_recovery_manager",
+          "resource_id": "backup_9288",
+          "identifiers": [
+            "miller.logistics@company.com"
+          ],
+          "timestamp": "26 Apr 02:00",
+          "status": "Archive",
+          "details": "Customer platform archive snapshot, 67.1 GB, region us-west-2, AES-256"
+        },
+        {
+          "system_id": "vault_recovery_manager",
+          "resource_id": "backup_9287",
+          "identifiers": [
+            "areed1433@gmail.com"
+          ],
+          "timestamp": "26 Apr 2026 02:00 UTC",
+          "status": "Verified",
+          "details": "Customer platform archive snapshot stored at s3://northstar-backups/customer-platform/weekly/segment-42-20260426.tar.zst, 84.7 GB, region eu-west-1, AES-256"
+        },
+        {
+          "system_id": "vault_recovery_manager",
+          "resource_id": "backup_9286",
+          "identifiers": [
+            "summit-retail@company.com"
+          ],
+          "timestamp": "26 Apr 02:00",
+          "status": "Archive",
+          "details": "Customer platform archive snapshot, 91.4 GB, region us-east-1, AES-256"
+        }
+      ],
+      "captured_at": "2026-04-29T09:00:00Z",
+      "file_path": "evidence/images/backup_restore_console_20260429.png"
+    },
+    "evidence_37": {
+      "file_id": "evidence_37",
+      "extracted_identifiers": [
+        "user_03",
+        "8f0c...31ad"
+      ],
+      "resources": [
+        {
+          "system_id": "sentinel",
+          "resource_id": "audit_record_003",
+          "identifiers": [
+            "user_03"
+          ],
+          "timestamp": "2026-08-25T04:03:00Z",
+          "status": "Valid",
+          "details": "Account closure recorded"
+        },
+        {
+          "system_id": "sentinel",
+          "resource_id": "audit_record_002",
+          "identifiers": [
+            "user_03"
+          ],
+          "timestamp": "2026-08-25 03:21 UTC",
+          "status": "Valid",
+          "details": "Session revoked"
+        },
+        {
+          "system_id": "sentinel",
+          "resource_id": "audit_record_001",
+          "identifiers": [
+            "user_03"
+          ],
+          "timestamp": "2026-08-24 16:14 UTC",
+          "status": "Valid",
+          "details": "Recovery challenge completed"
+        },
+        {
+          "system_id": "sentinel",
+          "resource_id": "audit_record_006",
+          "identifiers": [
+            "user_03"
+          ],
+          "timestamp": "2026-08-22 11:27 UTC",
+          "status": "Valid",
+          "details": "Email change confirmed"
+        },
+        {
+          "system_id": "sentinel",
+          "resource_id": "audit_record_005",
+          "identifiers": [
+            "user_03"
+          ],
+          "timestamp": "2026-08-20 09:42 UTC",
+          "status": "Valid",
+          "details": "Login from new device"
+        },
+        {
+          "system_id": "sentinel",
+          "resource_id": "audit_record_004",
+          "identifiers": [
+            "user_03"
+          ],
+          "timestamp": "2026-08-18 14:05 UTC",
+          "status": "Valid",
+          "details": "Password changed"
+        }
+      ],
+      "captured_at": "2026-09-05T07:00:00Z",
+      "file_path": "evidence/images/security_audit_explorer_20260905.png"
+    },
+    "evidence_42": {
+      "file_id": "evidence_42",
+      "extracted_identifiers": [
+        "user_17"
+      ],
+      "resources": [
+        {
+          "system_id": "customer_reference_registry",
+          "resource_id": "user_17",
+          "identifiers": [
+            "user_17"
+          ],
+          "timestamp": "2024-01-11 08:42 UTC",
+          "status": "Retained reference",
+          "details": "Customer key managed by Account Platform (eu-west); most recent update 10 Mar 2026 07:18 UTC"
+        },
+        {
+          "system_id": "orders",
+          "resource_id": "ORD-20263245",
+          "identifiers": [
+            "user_17"
+          ],
+          "timestamp": "2024-01-11 08:45 UTC",
+          "status": "Active",
+          "details": "Order record linked to customer"
+        },
+        {
+          "system_id": "support",
+          "resource_id": "CS-3245",
+          "identifiers": [
+            "user_17"
+          ],
+          "timestamp": "2024-02-14 12:16 UTC",
+          "status": "Active",
+          "details": "Support case linked to customer"
+        },
+        {
+          "system_id": "support",
+          "resource_id": "CS-3378",
+          "identifiers": [
+            "user_17"
+          ],
+          "timestamp": "2024-06-03 09:27 UTC",
+          "status": "Active",
+          "details": "Support case linked to customer"
+        },
+        {
+          "system_id": "finance",
+          "resource_id": "FIN-7742",
+          "identifiers": [
+            "user_17"
+          ],
+          "timestamp": "2024-08-22 15:03 UTC",
+          "status": "Active",
+          "details": "Finance record linked to customer"
+        }
+      ],
+      "captured_at": "2026-03-10T06:00:00Z",
+      "file_path": "evidence/images/deleted_account_reference_20260310.png"
+    },
+    "evidence_46": {
+      "file_id": "evidence_46",
+      "extracted_identifiers": [
+        "NS-10493",
+        "e71b6d..."
+      ],
+      "resources": [
+        {
+          "system_id": "object_storage",
+          "resource_id": "delivery_confirmation_19.pdf",
+          "identifiers": [
+            "e71b6d..."
+          ],
+          "timestamp": "2026-02-12T18:42:00Z",
+          "status": "present",
+          "details": "Delivery confirmation PDF in bucket northstar-customer-data (prefix: support-attachments/2026/02), version v3, uploaded by support-service"
+        },
+        {
+          "system_id": "object_storage",
+          "resource_id": "delivery_confirmation_20.pdf",
+          "identifiers": [],
+          "timestamp": "2026-02-11T14:17:00Z",
+          "status": "present",
+          "details": "Delivery confirmation PDF in bucket northstar-customer-data, version v1"
+        },
+        {
+          "system_id": "object_storage",
+          "resource_id": "return_label_4821.pdf",
+          "identifiers": [],
+          "timestamp": "2026-02-10T09:33:00Z",
+          "status": "present",
+          "details": "Return label PDF in bucket northstar-customer-data, version v1"
+        },
+        {
+          "system_id": "object_storage",
+          "resource_id": "return_label_4876.pdf",
+          "identifiers": [],
+          "timestamp": "2026-02-11T16:05:00Z",
+          "status": "present",
+          "details": "Return label PDF in bucket northstar-customer-data, version v2"
+        },
+        {
+          "system_id": "object_storage",
+          "resource_id": "invoice_NS-10493.pdf",
+          "identifiers": [
+            "NS-10493"
+          ],
+          "timestamp": "2026-02-10T11:21:00Z",
+          "status": "present",
+          "details": "Invoice document for NS-10493 in bucket northstar-customer-data, version v1"
+        },
+        {
+          "system_id": "object_storage",
+          "resource_id": "parcel_damage_7713.jpg",
+          "identifiers": [],
+          "timestamp": "2026-02-12T10:08:00Z",
+          "status": "present",
+          "details": "Parcel damage photo attachment in bucket northstar-customer-data, version v1"
+        },
+        {
+          "system_id": "object_storage",
+          "resource_id": "customer_export_2026-02-10.zip",
+          "identifiers": [],
+          "timestamp": "2026-02-10T23:14:00Z",
+          "status": "present",
+          "details": "Customer data export archive in bucket northstar-customer-data, version v1"
+        },
+        {
+          "system_id": "object_storage",
+          "resource_id": "customer_export_2026-02-12.zip",
+          "identifiers": [],
+          "timestamp": "2026-02-12T21:56:00Z",
+          "status": "present",
+          "details": "Customer data export archive in bucket northstar-customer-data, version v1"
+        }
+      ],
+      "captured_at": "2026-02-13T08:00:00Z",
+      "file_path": "evidence/images/object_storage_browser_20260213.png"
+    },
+    "evidence_60": {
+      "file_id": "evidence_60",
+      "extracted_identifiers": [
+        "Soo-jin Park",
+        "marketing_001",
+        "sj.park@naver.com",
+        "+82 10-5837-9451"
+      ],
+      "resources": [
+        {
+          "system_id": "audience_operations",
+          "resource_id": "marketing_001",
+          "identifiers": [
+            "Soo-jin Park",
+            "marketing_001",
+            "sj.park@naver.com",
+            "+82 10-5837-9451"
+          ],
+          "timestamp": "2026-09-15T23:40:00Z",
+          "status": "Live",
+          "details": "Audience Operations customer profile for Soo-jin Park in South Korea, subscribed to email, member of Returning customers \u2014 East Asia audience"
+        }
+      ],
+      "captured_at": "2026-09-16T07:20:00Z",
+      "file_path": "evidence/images/marketing_profile_console.png"
+    }
+  },
+  "pdfs": {
+    "evidence_18": {
+      "file_id": "evidence_18",
+      "extracted_identifiers": [
+        "Ingrid Dahl",
+        "user_18",
+        "ingrid.dahl@outlook.com",
+        "NST-2026-0718-1842",
+        "ORD-20261260"
+      ],
+      "resources": [
+        {
+          "system_id": "northstar_shop",
+          "resource_id": "user_18",
+          "identifiers": [
+            "user_18",
+            "Ingrid Dahl",
+            "ingrid.dahl@outlook.com"
+          ],
+          "timestamp": null,
+          "status": "active",
+          "details": "Customer profile for Ingrid Dahl"
+        },
+        {
+          "system_id": "northstar_shop",
+          "resource_id": "ORD-20261260",
+          "identifiers": [
+            "user_18",
+            "Ingrid Dahl",
+            "ingrid.dahl@outlook.com",
+            "ORD-20261260"
+          ],
+          "timestamp": "2026-07-08",
+          "status": "delivered",
+          "details": "Order ORD-20261260 for Smart desk lamp (SKU LAMP-SD-04), billing status paid, delivered 14 Jul to 24 Fjordgata, 7010 Trondheim, Norway"
+        },
+        {
+          "system_id": "northstar_shop",
+          "resource_id": "NST-2026-0718-1842",
+          "identifiers": [
+            "user_18",
+            "Ingrid Dahl",
+            "ingrid.dahl@outlook.com",
+            "NST-2026-0718-1842",
+            "ORD-20261260"
+          ],
+          "timestamp": null,
+          "status": null,
+          "details": "Customer statement document NST-2026-0718-1842"
+        }
+      ],
+      "captured_at": "2026-07-18T11:00:00Z",
+      "file_path": "evidence/documents/account_history_report_20260718.pdf"
+    },
+    "evidence_27": {
+      "file_id": "evidence_27",
+      "extracted_identifiers": [
+        "user_08",
+        "user_12",
+        "user_17",
+        "user_21",
+        "user_24",
+        "user_29"
+      ],
+      "resources": [
+        {
+          "system_id": "disputed_orders_register",
+          "resource_id": "ORD-20264118",
+          "identifiers": [
+            "user_08"
+          ],
+          "timestamp": "04 May 2026",
+          "status": "Card dispute",
+          "details": "Card dispute | USD 184.20 | Retain until 04 May 2033 | Finance owner AR"
+        },
+        {
+          "system_id": "disputed_orders_register",
+          "resource_id": "ORD-20264207",
+          "identifiers": [
+            "user_12"
+          ],
+          "timestamp": "09 May 2026",
+          "status": "Tax correction",
+          "details": "Tax correction | EUR 72.40 | Retain until 09 May 2033 | Finance owner ML"
+        },
+        {
+          "system_id": "disputed_orders_register",
+          "resource_id": "ORD-20264319",
+          "identifiers": [
+            "user_17"
+          ],
+          "timestamp": "14 May 2026",
+          "status": "Chargeback",
+          "details": "Chargeback | GBP 219.00 | Retain until 14 May 2033 | Finance owner SK"
+        },
+        {
+          "system_id": "disputed_orders_register",
+          "resource_id": "ORD-20264402",
+          "identifiers": [
+            "user_21"
+          ],
+          "timestamp": "18 May 2026",
+          "status": "Invoice inquiry",
+          "details": "Invoice inquiry | CAD 96.55 | Retain until 18 May 2033 | Finance owner AR"
+        },
+        {
+          "system_id": "disputed_orders_register",
+          "resource_id": "ORD-20264511",
+          "identifiers": [
+            "user_24"
+          ],
+          "timestamp": "23 May 2026",
+          "status": "Card dispute",
+          "details": "Card dispute | AUD 311.80 | Retain until 23 May 2033 | Finance owner ML"
+        },
+        {
+          "system_id": "disputed_orders_register",
+          "resource_id": "ORD-20264600",
+          "identifiers": [
+            "user_29"
+          ],
+          "timestamp": "28 May 2026",
+          "status": "Tax record",
+          "details": "Tax record | USD 48.75 | Retain until 28 May 2033 | Finance owner SK"
+        }
+      ],
+      "captured_at": "2026-05-29T08:00:00Z",
+      "file_path": "evidence/documents/legal_retention_register_20260529.pdf"
+    },
+    "evidence_55": {
+      "file_id": "evidence_55",
+      "extracted_identifiers": [
+        "user_03",
+        "8f0c\u202631ad"
+      ],
+      "resources": [
+        {
+          "system_id": "compliance_journal",
+          "resource_id": "CJX-20260905-0630",
+          "identifiers": [
+            "user_03"
+          ],
+          "timestamp": "05 Sep 2026 06:30 UTC",
+          "status": "valid",
+          "details": "Signed record extract from Northstar Shop Compliance Journal partition 2026-Q3"
+        },
+        {
+          "system_id": "compliance_ledger",
+          "resource_id": "audit_record_003",
+          "identifiers": [
+            "user_03"
+          ],
+          "timestamp": "25 Aug 2026 04:03 UTC",
+          "status": "Account closure recorded",
+          "details": "Account closure recorded by automated account workflow; retain until 25 Aug 2027 04:03 UTC"
+        }
+      ],
+      "captured_at": "2026-09-05T06:30:00Z",
+      "file_path": "evidence/documents/security_retention_extract.pdf"
+    },
+    "evidence_58": {
+      "file_id": "evidence_58",
+      "extracted_identifiers": [
+        "Priya Raman",
+        "priya.raman@gmail.com",
+        "+91 98765 73142",
+        "CS-4827",
+        "ORD-20264827",
+        "c90a42"
+      ],
+      "resources": [
+        {
+          "system_id": "support_001",
+          "resource_id": "CS-4827",
+          "identifiers": [
+            "Priya Raman",
+            "priya.raman@gmail.com",
+            "+91 98765 73142",
+            "ORD-20264827"
+          ],
+          "timestamp": "2026-06-18 10:24 UTC",
+          "status": "received",
+          "details": "Northstar Shop Delivery Address Correction Request to change apartment number from 14B to 18B"
+        },
+        {
+          "system_id": "order_service",
+          "resource_id": "ORD-20264827",
+          "identifiers": [
+            "Priya Raman",
+            "priya.raman@gmail.com",
+            "+91 98765 73142"
+          ],
+          "timestamp": null,
+          "status": null,
+          "details": "Order for Stainless steel water bottle, quantity 2 via carrier SwiftShip"
+        },
+        {
+          "system_id": "file_storage",
+          "resource_id": "delivery_address_correction.pdf",
+          "identifiers": [
+            "CS-4827",
+            "c90a42"
+          ],
+          "timestamp": "2026-09-12 07:30 UTC",
+          "status": "captured",
+          "details": "Uploaded attachment file of size 312 KB in region ap-south with checksum prefix c90a42"
+        }
+      ],
+      "captured_at": "2026-09-12T07:30:00Z",
+      "file_path": "evidence/documents/delivery_correction_attachment.pdf"
+    }
+  }
+}

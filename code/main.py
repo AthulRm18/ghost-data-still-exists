@@ -73,6 +73,8 @@ def process_case(
     resolver: IdentityResolver,
     activity_index: ActivityIndex,
     policy_engine: PolicyEngine,
+    case_batch_acc: Optional[Dict[str, str]] = None,
+    case_batch_an: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
     """Processes a single deletion request and returns output row dictionary."""
     cid = req["case_id"].strip()
@@ -100,12 +102,18 @@ def process_case(
             "steps_json": "[]",
         }
 
+    batch_acc = case_batch_acc.get(cid) if case_batch_acc else None
+    batch_an = case_batch_an.get(cid) if case_batch_an else None
+
     # 3. Evaluate deletion policy and evidence
     status, raw_steps = policy_engine.audit_case(
         user=user,
         requested_at=req_at,
         audit_at=audit_at,
         reported_at=rep_at,
+        case_id=cid,
+        batch_acc=batch_acc,
+        batch_an=batch_an,
     )
 
     # 5. Deterministically sort and consecutively number steps
@@ -131,6 +139,24 @@ def run_pipeline(
         dataset_dir, cache_dir
     )
 
+    sample_path = dataset_dir / "sample_deletion_requests.csv"
+    eval_path = dataset_dir / "deletion_requests.csv"
+    all_known_requests = []
+    if sample_path.exists():
+        with open(sample_path, mode="r", encoding="utf-8") as f:
+            all_known_requests.extend(list(csv.DictReader(f)))
+    if eval_path.exists():
+        with open(eval_path, mode="r", encoding="utf-8") as f:
+            all_known_requests.extend(list(csv.DictReader(f)))
+
+    print("Resolving global deletion_worker batch assignments...")
+    case_batch_acc, case_batch_an = activity_index.resolve_batch_worker_resources(
+        all_known_requests,
+        resolver,
+        evidence_index.export_files_data,
+        evidence_index.user_all_accounts,
+    )
+
     if mode == "samples":
         input_csv = dataset_dir / "sample_deletion_requests.csv"
     else:
@@ -143,7 +169,9 @@ def run_pipeline(
     print(f"Processing {len(requests)} cases in '{mode}' mode...")
     rows = []
     for i, req in enumerate(requests, 1):
-        row = process_case(req, resolver, activity_index, policy_engine)
+        row = process_case(
+            req, resolver, activity_index, policy_engine, case_batch_acc, case_batch_an
+        )
         rows.append(row)
         if i % 50 == 0 or i == len(requests):
             print(f"  Processed {i}/{len(requests)} cases...")

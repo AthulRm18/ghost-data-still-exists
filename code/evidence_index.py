@@ -102,6 +102,75 @@ class EvidenceIndex:
         self._load_records()
         self._load_sql_snapshots()
         self._load_logs()
+        self._load_pdf_documents()
+        self.export_files_data = self._index_export_files()
+        self.user_all_accounts: Dict[str, str] = {}
+        self.user_all_audit_records: Dict[str, str] = {}
+        self._index_user_resources()
+
+    def _index_export_files(self) -> Dict[str, Any]:
+        export_files_data = {}
+        for ef in self.evidence_files.values():
+            if "service_resource_export" in ef["file_path"]:
+                fid = ef["file_id"]
+                fpath = self.dataset_dir / ef["file_path"]
+                if not fpath.exists():
+                    continue
+                try:
+                    with open(fpath, mode="r", encoding="utf-8") as f:
+                        c = json.load(f)
+                    se = c.get("service_exports", {})
+                    raw_acc_404 = [
+                        a for a in se.get("account_service", {}).get("profile_lookups", [])
+                        if a.get("status_code") == 404
+                    ]
+                    raw_acc_404.sort(key=lambda x: x.get("observed_at", ""))
+                    acc_404 = [a["resource_id"] for a in raw_acc_404]
+                    acc_obs_times = {a["resource_id"]: a.get("observed_at", "") for a in raw_acc_404}
+
+                    raw_an_anon = [
+                        a for a in se.get("analytics_platform", {}).get("profiles", [])
+                        if not a.get("email") and not a.get("customer_reference")
+                    ]
+                    raw_an_anon.sort(key=lambda x: x.get("observed_at", ""))
+                    an_anon = [a["resource_id"] for a in raw_an_anon]
+                    an_obs_times = {a["resource_id"]: a.get("observed_at", "") for a in raw_an_anon}
+
+                    sec_users = [
+                        s["subject_reference"]
+                        for s in se.get("security_service", {}).get("audit_records", [])
+                        if s.get("subject_reference")
+                    ]
+                    export_files_data[fid] = {
+                        "file_id": fid,
+                        "captured_at": ef["captured_at"],
+                        "acc_404": acc_404,
+                        "acc_obs_times": acc_obs_times,
+                        "an_anon": an_anon,
+                        "an_obs_times": an_obs_times,
+                        "sec_users": set(sec_users),
+                    }
+                except Exception:
+                    pass
+        return export_files_data
+
+    def _index_user_resources(self) -> None:
+        for obs in self.observations:
+            ident = obs.matched_identifier.strip().lower()
+            if not ident:
+                continue
+            if obs.system_id == "account_service" and obs.resource_id:
+                if ident not in self.user_all_accounts:
+                    self.user_all_accounts[ident] = obs.resource_id
+            elif obs.system_id == "security_service" and obs.resource_id:
+                if ident not in self.user_all_audit_records:
+                    self.user_all_audit_records[ident] = obs.resource_id
+
+        for obs in self.observations:
+            if obs.system_id == "security_service" and obs.resource_id and isinstance(obs.details, dict):
+                sub_ref = obs.details.get("subject_reference") or obs.details.get("subject_ref")
+                if sub_ref and sub_ref.lower().startswith("user_"):
+                    self.user_all_audit_records[sub_ref.lower()] = obs.resource_id
 
     def _load_manifest(self) -> None:
         manifest_path = self.dataset_dir / "evidence_files.csv"
@@ -229,6 +298,81 @@ class EvidenceIndex:
                         matched_identifier=info.get("user_id", ""),
                     )
                 )
+
+    def _load_pdf_documents(self) -> None:
+        try:
+            import fitz
+            for fid, ef in self.evidence_files.items():
+                if not ef["file_path"].endswith(".pdf"):
+                    continue
+                pdf_path = self.dataset_dir / ef["file_path"]
+                if not pdf_path.exists():
+                    continue
+                doc = fitz.open(pdf_path)
+                full_text = "\n".join(page.get_text() for page in doc)
+                captured_at = ef["captured_at"]
+
+                # Extract support resources
+                for sm in re.finditer(r"\b(support_\d+)\b", full_text, flags=re.IGNORECASE):
+                    res_id = sm.group(1).lower()
+                    emails = re.findall(r"[\w\.-]+@[\w\.-]+\.\w+", full_text)
+                    uids = re.findall(r"\b(user_\d+)\b", full_text, flags=re.IGNORECASE)
+                    for ident in set(emails + uids):
+                        self.observations.append(
+                            EvidenceObservation(
+                                file_id=fid,
+                                file_path=ef["file_path"],
+                                captured_at=captured_at,
+                                system_id="support_platform",
+                                resource_id=res_id,
+                                observation_type="SUPPORT_ATTACHMENT",
+                                state="PRESENT",
+                                details={"text_snippet": full_text[:300]},
+                                matched_identifier=str(ident),
+                            )
+                        )
+
+                # Extract security audit records
+                for am in re.finditer(r"\b(audit_record_\d+)\b", full_text, flags=re.IGNORECASE):
+                    res_id = am.group(1).lower()
+                    emails = re.findall(r"[\w\.-]+@[\w\.-]+\.\w+", full_text)
+                    uids = re.findall(r"\b(user_\d+)\b", full_text, flags=re.IGNORECASE)
+                    for ident in set(emails + uids):
+                        self.observations.append(
+                            EvidenceObservation(
+                                file_id=fid,
+                                file_path=ef["file_path"],
+                                captured_at=captured_at,
+                                system_id="security_service",
+                                resource_id=res_id,
+                                observation_type="AUDIT_RETAINED",
+                                state="PRESENT",
+                                details={"text_snippet": full_text[:300]},
+                                matched_identifier=str(ident),
+                            )
+                        )
+
+                # Extract statement exports (e.g. statement NST-2026-0718-1842 -> export_1842)
+                for em in re.finditer(r"statement\s+NST-\d+-(\d+)", full_text, flags=re.IGNORECASE):
+                    res_id = f"export_{em.group(1)}"
+                    emails = re.findall(r"[\w\.-]+@[\w\.-]+\.\w+", full_text)
+                    uids = re.findall(r"\b(user_\d+)\b", full_text, flags=re.IGNORECASE)
+                    for ident in set(emails + uids):
+                        self.observations.append(
+                            EvidenceObservation(
+                                file_id=fid,
+                                file_path=ef["file_path"],
+                                captured_at=captured_at,
+                                system_id="export_service",
+                                resource_id=res_id,
+                                observation_type="RECORD_FOUND",
+                                state="PRESENT",
+                                details={"text_snippet": full_text[:300]},
+                                matched_identifier=str(ident),
+                            )
+                        )
+        except Exception:
+            pass
 
     def _load_records(self) -> None:
         rec_dir = self.dataset_dir / "evidence" / "records"
@@ -1009,10 +1153,45 @@ class EvidenceIndex:
 
             # Untraced lines
             for ev in untraced_lines:
-                res_id = ev.get("resource_id")
-                ident = ev.get("email") or ev.get("customer_reference") or ev.get("user_id") or ""
-                raw_srv = ev.get("service", "account_service")
+                res_id = ev.get("resource_id") or ev.get("connector_id") or ev.get("backup_id") or ev.get("export_id")
+                ident = (
+                    ev.get("subject_reference")
+                    or ev.get("subject_ref")
+                    or ev.get("lookup_key")
+                    or ev.get("email")
+                    or ev.get("customer_reference")
+                    or ev.get("user_id")
+                    or ""
+                )
+                raw_srv = ev.get("system") or ev.get("service") or "account_service"
                 srv = SERVICE_MAP.get(raw_srv, raw_srv)
+
+                res_val = str(ev.get("result", "")).upper()
+                if res_val == "NOT_FOUND":
+                    state = "ABSENT"
+                    obs_type = "LOOKUP_404"
+                elif res_val == "ACTIVE":
+                    state = "ACTIVE"
+                    obs_type = "FLOW_ACTIVE" if srv == "integration_service" else "RESTORE_ACTIVE"
+                elif res_val == "DISABLED":
+                    state = "DISABLED"
+                    obs_type = "FLOW_DISABLED"
+                elif res_val == "BLOCKED":
+                    state = "BLOCKED"
+                    obs_type = "RESTORE_BLOCKED"
+                elif res_val == "IDENTIFIABLE":
+                    state = "PRESENT"
+                    obs_type = "PII_EXPOSED"
+                elif res_val == "REDACTED":
+                    state = "REDACTED"
+                    obs_type = "RECORD_REDACTED"
+                elif res_val == "FOUND":
+                    state = "PRESENT"
+                    obs_type = "AUDIT_RETAINED" if srv == "security_service" else "RECORD_FOUND"
+                else:
+                    state = "PRESENT"
+                    obs_type = "RECORD_FOUND"
+
                 if res_id:
                     self.observations.append(
                         EvidenceObservation(
@@ -1021,8 +1200,8 @@ class EvidenceIndex:
                             captured_at=captured_at,
                             system_id=srv,
                             resource_id=res_id,
-                            observation_type="RECORD_FOUND",
-                            state="PRESENT",
+                            observation_type=obs_type,
+                            state=state,
                             details=ev,
                             matched_identifier=str(ident),
                         )

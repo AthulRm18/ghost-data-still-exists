@@ -19,8 +19,12 @@ from code.step_sorter import sort_and_number_steps
 
 
 class MockEvidenceIndex:
-    def __init__(self, observations):
+    def __init__(self, observations, evidence_files=None):
         self.obs = observations
+        self.evidence_files = evidence_files or {}
+        self.export_files_data = {}
+        self.user_all_accounts = {}
+        self.user_all_audit_records = {}
 
     def query_observations_for_user(self, user, audit_at, known_resource_ids=None):
         return [o for o in self.obs if o.captured_at <= audit_at]
@@ -33,6 +37,12 @@ class MockActivityIndex:
 
     def get_deletion_resources_for_user(self, user, requested_at, audit_at):
         return self.deletion_resources
+
+    def get_linked_resources_for_user(self, user, audit_at):
+        return set()
+
+    def find_worker_account_heuristic(self, requested_at, reported_at, audit_at, window_seconds=600):
+        return None
 
 
 class TestCustomEvaluationCases(unittest.TestCase):

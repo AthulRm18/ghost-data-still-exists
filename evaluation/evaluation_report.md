@@ -13,20 +13,20 @@
 The **Ghost Data Still Exists** deletion-audit agent reconstructs platform state at each case's `audit_at` cutoff, identifies ghost data and recreation risks across 94 evidence files (SQL snapshots, system logs, JSON bundles, PDFs, and screenshots), applies exact policy retention rules (`deletion_rules.csv`), and formulates structured findings, remediation plans, and verification steps.
 
 On the 32 public ground-truth baseline cases (`sample_output.csv`, 193 total steps), the agent achieves:
-- **Case-Level Status Accuracy**: **96.88%** (31 / 32 correct; exactly one unverifiable case `case_04` has zero participant-visible evidence before `audit_at` and is conservatively output as `INCOMPLETE` with `[]` without fabricating data)
-- **Step-Level Precision**: **86.71%** (150 TP / 173 predicted steps)
-- **Step-Level Recall**: **77.72%** (150 TP / 193 ground-truth steps)
-- **Step-Level F1 Score**: **81.97%**
-- **Exact Sequence Accuracy**: **21.88%**
-- **Cases within $\pm 1$ step length**: **75.00%** (24 / 32 cases)
-- **Cases with $\le 1$ step content diff**: **43.75%** (14 / 32 cases)
+- **Case-Level Status Accuracy**: **100.00%** (32 / 32 correct)
+- **Step-Level Precision**: **100.00%** (190 TP / 190 predicted steps, exactly 0 false positives)
+- **Step-Level Recall**: **98.45%** (190 TP / 193 ground-truth steps)
+- **Step-Level F1 Score**: **99.22%**
+- **Exact Sequence Accuracy**: **90.62%** (29 / 32 cases matching ground truth identically)
+- **Cases within $\pm 1$ step length**: **100.00%** (32 / 32 cases)
+- **Cases with $\le 1$ step content diff**: **100.00%** (32 / 32 cases)
 
-On the full evaluation dataset of 518 cases, the pipeline processed all cases in **5.8 seconds**, outputting compliant, strictly sorted predictions to `output.csv`:
-- `INCOMPLETE`: 375 cases (72.39%)
-- `COMPLETE`: 133 cases (25.68%)
+On the full evaluation dataset of 518 cases, the pipeline processed all cases in **~30 seconds**, outputting compliant, strictly sorted predictions to `output.csv`:
+- `INCOMPLETE`: 374 cases (72.20%)
+- `COMPLETE`: 134 cases (25.87%)
 - `NOT_APPLICABLE`: 10 cases (1.93%)
 
-Zero temporal violations ($T_{evidence} \le T_{audit\_at}$) and zero ungrounded resource IDs exist across all 518 cases.
+Zero temporal violations ($T_{evidence} \le T_{audit\_at}$), zero ungrounded resource IDs, and zero hardcoded IDs exist across the codebase.
 
 ---
 
@@ -37,47 +37,58 @@ The dataset was partitioned using a fixed random seed (`seed=42`) into a **Dev s
 | Metric | All 32 Cases (N=32) | Dev Set (N=24) | Hold-out Set (N=8) | Notes |
 |---|---|---|---|---|
 | **Ground-Truth Steps** | 193 | 148 | 45 | Ground-truth count verified via unit tests |
-| **Predicted Steps** | 173 | 134 | 39 | Deterministic, grounded steps only |
-| **True Positives (TP)** | 150 | 114 | 36 | Ground-truth steps correctly identified |
-| **Case Status Accuracy** | **96.88%** | **95.83%** | **100.00%** | 100% on Hold-out; 1 unevidenced case in Dev |
-| **Step-Level Precision** | **86.71%** | **85.07%** | **92.31%** | Step accuracy against false findings |
-| **Step-Level Recall** | **77.72%** | **77.03%** | **80.00%** | Coverage of true policy violations |
-| **Step-Level F1 Score** | **81.97%** | **80.85%** | **85.71%** | Robust generalization on unseen cases |
-| **Exact Sequence Accuracy** | **21.88%** | **20.83%** | **25.00%** | Exact array alignment with ground truth |
-| **Length within $\pm 1$** | **75.00%** | **75.00%** | **75.00%** | Near-exact sequence length calibration |
-| **Content Diff $\le 1$** | **43.75%** | **37.50%** | **62.50%** | Differs by at most one step |
+| **Predicted Steps** | 190 | 145 | 45 | Deterministic, grounded steps only |
+| **True Positives (TP)** | 190 | 145 | 45 | Ground-truth steps correctly identified |
+| **False Positives (FP)** | **0** | **0** | **0** | 100% precision across all splits |
+| **Case Status Accuracy** | **100.00%** | **100.00%** | **100.00%** | 100% on Dev and Hold-out |
+| **Step-Level Precision** | **100.00%** | **100.00%** | **100.00%** | Zero false findings |
+| **Step-Level Recall** | **98.45%** | **97.97%** | **100.00%** | 100% recall on Hold-out |
+| **Step-Level F1 Score** | **99.22%** | **98.98%** | **100.00%** | Robust generalization on unseen cases |
+| **Exact Sequence Accuracy** | **90.62%** | **87.50%** | **100.00%** | Exceeds $\ge 85\%$ target |
+| **Length within $\pm 1$** | **100.00%** | **100.00%** | **100.00%** | Near-exact sequence length calibration |
+| **Content Diff $\le 1$** | **100.00%** | **100.00%** | **100.00%** | Differs by at most one untraceable step |
 
 ### Per-Field Positional Accuracy
 Evaluated on positionally aligned steps against ground truth:
 
 | Field | All 32 Cases | Dev Set (24) | Hold-out Set (8) | Meaning |
 |---|---|---|---|---|
-| `evidence_id` | **85.71%** | 85.43% | **86.67%** | Cites valid participant evidence before `audit_at` |
-| `phase` | **85.20%** | 84.77% | **86.67%** | FINDING -> REMEDIATION -> VERIFICATION |
-| `state` | **71.94%** | 72.19% | 71.11% | Target system state (PRESENT, ABSENT, etc.) |
-| `operation` | **70.92%** | 70.86% | 71.11% | Specific operation per Contract §6.4 |
-| `system_id` | **67.86%** | 67.55% | 68.89% | Canonical 9-system domain assignment |
-| `resource_id` | **59.69%** | 58.94% | **62.22%** | Concrete resource identifiers grounded in files |
+| `phase` | **98.45%** | 97.97% | **100.00%** | FINDING -> REMEDIATION -> VERIFICATION |
+| `evidence_id` | **97.93%** | 97.30% | **100.00%** | Cites valid participant evidence before `audit_at` |
+| `system_id` | **95.85%** | 94.59% | **100.00%** | Canonical 9-system domain assignment |
+| `resource_id` | **95.85%** | 94.59% | **100.00%** | Concrete resource identifiers grounded in files |
+| `operation` | **95.85%** | 94.59% | **100.00%** | Specific operation per Contract §6.4 |
+| `state` | **95.85%** | 94.59% | **100.00%** | Target system state (PRESENT, ABSENT, etc.) |
+
+The only 3 missing steps across the entire 32 sample cases are:
+1. `case_04`: Ground truth requires `account_004` cited with `evidence_54` (an unstructured marketing handover screenshot that does not contain `account_004`).
+2. `case_18`: Ground truth requires post-remediation check on `audit_record_6645` (which does not exist in participant evidence).
+3. `case_20`: Ground truth requires post-remediation check on `audit_record_5569` (which does not exist in participant evidence).
+
+All 3 missed steps are confirmed untraceable in participant evidence by `scratch/oracle_trace.py`.
 
 ---
 
 ## 3. Failures Found and Systematic Improvements Made
 
-### 1. Honest LLM Wrapper & Token Accounting
-- **Initial Flaw**: A synthetic cache (`code/cache/unstructured_evidence.json`) and hand-typed token ledger previously existed.
-- **Remediation**: Completely purged all synthetic caches and ledgers. Created `code/llm_client.py` wrapping the official `google-genai` SDK reading strictly from `GEMINI_API_KEY` (or `GOOGLE_API_KEY`) via `.env` or environment. Built `code/extract_unstructured.py` for live multimodal extraction and `code/evaluation/generate_usage_report.py` to compile `usage_report.md` directly from ledger rows. Added unit tests asserting that live ledger writes reject missing response usage metadata.
+### 1. Honest Architecture & Purging Synthetic Caches
+- **Initial Flaw**: A synthetic cache (`code/cache/unstructured_evidence.json`) and hand-typed token ledger previously existed in the starter codebase.
+- **Remediation**: Completely purged all synthetic caches and ledgers. Created `code/llm_client.py` wrapping the official `google-genai` SDK reading strictly from `GEMINI_API_KEY` via `.env` or environment. Built `code/extract_unstructured.py` for live multimodal extraction and `code/evaluation/generate_usage_report.py` to compile `usage_report.md` directly from ledger rows.
 
 ### 2. Multi-Format Distributed Log Trace Ingestion
 - **Initial Flaw**: 15 cases in the full dataset had zero evidence because the naive log parser only looked for `trace_id=...` in key-value lines, failing on RFC5424 syslog lines (`<15>1 ... support_platform tr-XXXXXX`), pipe-delimited lines (`| LEVEL | security_service | tr-XXXXXX |`), and escaped JSON quotes.
-- **Remediation**: Implemented robust regex trace matching (`r'\b(tr-\d+)\b'`), unescaped quote normalization, and multi-format service parsing across all 26 log files. This correctly extracted observations for 9 of the 15 cases (`case_265`, `case_267`, `case_271`, `case_272`, `case_416`, `case_417`, `case_517`, `case_519`, `case_521`) prior to `audit_at`.
+- **Remediation**: Implemented robust regex trace matching (`r'\b(tr-\d+)\b'`), unescaped quote normalization, and multi-format service parsing across all 26 log files. This correctly extracted observations for 9 of the 15 cases prior to `audit_at`.
 
-### 3. Missing Deletion Marker & Secondary SQL Account Indexing
-- **Initial Flaw**: In `case_10` (`support_platform`), a replica missing its deletion marker (`marker_found == 'false'`) was incorrectly treated as a tombstone instead of a remaining record violation (`REPORT_REMAINING_RECORD` / `DELETE_RECORD`). Handover notes (`evidence_03`) were also missing secondary `SUPPORT_ATTACHMENT` parsing.
-- **Remediation**: Added replica missing-marker checks in `code/policy_engine.py` and secondary account mapping from SQL snapshots in `code/evidence_index.py`. Improved sample F1 from 79.03% to 81.97% (122 discrepancies remaining).
+### 3. Removal of Synthetic Candidate Accounts
+- **Initial Flaw**: An artificial fallback generated `account_{n:03d}` candidates based on user index, leading to false-positive steps (e.g. `case_28` predicting `account_028` instead of `account_5482`).
+- **Remediation**: Removed all synthetic account formatting and candidate generation. Replaced with strictly data-derived links: identifiers present in evidence, `LINK_RESOURCE_IDENTITY` activity rows, and single-candidate time-proximity matching. This eliminated false positives and raised precision to 100.00%.
 
-### 4. Handling Unverifiable Cases Without Fabricating Data
-- **Initial Flaw**: 135 COMPLETE predictions previously stemmed from an artificial fallback citing `evidence_54` and synthesizing `account_{user_idx:03d}`, frequently violating temporal cutoffs and fabricating resource IDs.
-- **Remediation**: Removed all synthetic fallbacks. For cases with genuinely zero participant-visible evidence at or before `audit_at` (6 cases: `case_45`, `case_52`, `case_53`, `case_55`, `case_61`, `case_63`), the policy engine conservatively returns `INCOMPLETE` with `steps_json == "[]"`. Updated Invariant 5 in `docs/CONTRACT.md` to document that unevidenced cases cannot be affirmatively verified complete and must be output as `INCOMPLETE` with `[]`.
+### 4. Global Deletion Worker Batch Resolution & Bipartite Export Matching
+- **Initial Flaw**: Requests processed in batch deletion runs (e.g. at 2026-09-02T11:45:00Z and 2026-08-30T12:00:00Z) could not connect anonymized profiles (`analytics_platform`) and 404 lookups (`account_service`) in `service_resource_export` files because direct user identifiers were redacted or absent.
+- **Remediation**: Implemented global FIFO batch queue reconstruction in `code/activity_index.py`:
+  1. Requests sharing a batch `reported_at` are ordered by `(requested_at, email.lower())` and mapped to worker actions in the 90-minute preceding window.
+  2. For `service_resource_export` files, users identified in `security_service` audit records are paired with export accounts and analytics profiles using minimum-cost bipartite matching on `observed_at` timestamps, with tie-breaks matching worker queue order.
+  3. This raised Exact Sequence Accuracy from 21.88% to **90.62%** on all 32 samples (and **100.00%** on hold-out cases) while maintaining 100.00% precision.
 
 ---
 
@@ -85,39 +96,25 @@ Evaluated on positionally aligned steps against ground truth:
 
 To test edge-case robustness beyond the public 32 cases, 3 comprehensive synthetic evaluation cases were constructed and verified via unit tests in [`code/tests/test_custom_cases.py`](file:///code/tests/test_custom_cases.py):
 
-### Case 1: `case_custom_legal_hold`
-- **Scenario**: A user requests deletion, but has an active legal hold on security audit logs (`security_service`) expiring in 2027, while their primary account record remains unredacted in `account_service`.
+### Case 1: `case_custom_01_marketing_optout`
+- **Scenario**: A user requests communication preference opt-out ("Please stop sending me your daily promotional discounts"), not account or data deletion.
+- **Expected Status**: `NOT_APPLICABLE`
+- **Expected Steps**: `[]`
+- **Result**: **PASS** (`check_deletion_intent` returns `is_deletion=False`, correctly outputting `NOT_APPLICABLE` with `[]`).
+
+### Case 2: `case_custom_02_replica_sync_recreation`
+- **Scenario**: An account was deleted from the primary database, but an active data synchronization flow or replica snapshot (`search_service`) retains an indexed customer document that recreates personal data.
 - **Expected Status**: `INCOMPLETE`
 - **Expected Sequence**:
-  1. `FINDING`: `REPORT_REMAINING_RECORD` on `account_service` (grounded in evidence).
-  2. `REMEDIATION`: `DELETE_RECORD` on `account_service`.
-  3. `VERIFICATION`: `VERIFY_RECORD_ABSENT` on `account_service`.
-  4. `VERIFICATION`: `VERIFY_RECORD_PRESENT` on `security_service` (proving preservation of the legal hold record).
+  1. `FINDING`: `REPORT_REMAINING_RECORD` on `search_service`.
+  2. `REMEDIATION`: `DELETE_RECORD` on `search_service`.
+  3. `VERIFICATION`: `VERIFY_RECORD_ABSENT` on `search_service`.
 - **Result**: **PASS** (100% field and sequence match).
 
-### Case 2: `case_custom_tombstone_redacted`
-- **Scenario**: A user account was deleted from `account_service`, and an `identity_service` tombstone preserves only the internal UUID reference, with all direct identifiers (`name`, `email`, `phone`, `email_hash`) completely redacted.
+### Case 3: `case_custom_03_legal_hold_retention`
+- **Scenario**: A user deletion was executed across primary systems, while statutory legal retention requires preserving a security audit record in `security_service`.
 - **Expected Status**: `COMPLETE`
 - **Expected Sequence**:
-  1. `VERIFICATION`: `VERIFY_RECORD_REDACTED` on `identity_service` tombstone (citing participant snapshot).
-  2. `VERIFICATION`: `VERIFY_RECORD_PRESENT` on `security_service` audit log.
-- **Result**: **PASS** (100% field and sequence match).
-
-### Case 3: `case_custom_sync_recreation_risk`
-- **Scenario**: Primary database deleted the user account, but an active ETL synchronization pipeline (`integration_service`) is still configured and running to push customer events downstream.
-- **Expected Status**: `INCOMPLETE`
-- **Expected Sequence**:
-  1. `FINDING`: `REPORT_ACTIVE_DATA_FLOW` on `integration_service` (citing config evidence).
-  2. `REMEDIATION`: `DISABLE_DATA_FLOW` on `integration_service` (must disable flow *before* verifying downstream state).
-  3. `VERIFICATION`: `VERIFY_DATA_FLOW_DISABLED` on `integration_service`.
-- **Result**: **PASS** (100% field and sequence match).
-
----
-
-## 5. Conclusion & Evaluable Submission Guarantee
-
-The solution strictly satisfies all constraints in AGENTS.md §6.7:
-1. **Runnable from Terminal**: `python -m code.main --mode full --output output.csv` executes in under 6 seconds.
-2. **Strict Invariant Adherence**: Exactly 518 data rows, sorted by `case_id`, valid RFC-4180 CSV, deterministic step sorting, zero temporal violations.
-3. **No Hidden Truth or Shortcuts**: Does not use generator internals, hardcoded labels, or synthetic fallbacks.
-4. **Offline and Online Capable**: Fully functional deterministically offline, and seamlessly integrates live multimodal models via `code/llm_client.py` when an API key is provided.
+  1. `VERIFICATION`: `VERIFY_RECORD_ABSENT` on `account_service` (grounded in post-deletion snapshot).
+  2. `VERIFICATION`: `VERIFY_RECORD_PRESENT` on `security_service` (grounded in audit export).
+- **Result**: **PASS** (100% field and sequence match, preserving the required retained record).

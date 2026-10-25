@@ -25,7 +25,7 @@ if str(REPO_ROOT) not in sys.path:
 from code.llm_client import LLMClient
 
 
-def run_extraction(model_name: str = "gemini-2.5-flash", force_live: bool = False):
+def run_extraction(model_name: str = "gemini-3.8-flash", force_live: bool = False):
     api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
     if not api_key:
         print("ERROR: GEMINI_API_KEY (or GOOGLE_API_KEY) environment variable is not set.", file=sys.stderr)
@@ -93,7 +93,7 @@ def run_extraction(model_name: str = "gemini-2.5-flash", force_live: bool = Fals
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Multimodal evidence extractor")
-    parser.add_argument("--model", default="gemini-2.5-flash", help="Model name")
+    parser.add_argument("--model", default="gemini-3.8-flash", help="Model name")
     parser.add_argument("--force-live", action="store_true", help="Force live API calls")
     args = parser.parse_args()
 

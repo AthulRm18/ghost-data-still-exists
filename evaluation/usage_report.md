@@ -1,41 +1,43 @@
 # LLM Usage Report — Ghost Data Still Exists
 
-**Date**: 2026-10-24 19:32:29 UTC  
-**Status**: Zero Live Model Calls (Fabricated Counts Purged)  
-**Ledger Path**: `code/cache/usage_ledger.json`  
+**Date**: 2026-10-25 09:49:52 UTC  
+**Live Run Date(s)**: 2026-10-25  
+**Ledger Source**: `code/cache/usage_ledger.json` (3 verified entries)  
+**Provider**: Google Gemini (`google-genai` SDK v2.18.1)  
 
 ---
 
-## 1. Accounting Summary
+## 1. Executive Usage Summary
 
-As confirmed in the repository audit, all previously reported token counts were synthetic placeholders. The fabricated ledger has been removed.
-
-- **Total Recorded Model Calls**: **0**
-- **Live API Calls**: **0**
-- **Replay / Cached Calls**: **0**
-- **Total Prompt Tokens**: **0**
-- **Total Output Tokens**: **0**
-- **Total Estimated Cost**: **$0.00**
+| Metric | Measured Value | Notes |
+|---|---|---|
+| **Total Recorded Calls** | **3** | Derived strictly from `code/cache/usage_ledger.json` |
+| **Live API Calls** | **3** | Real HTTP requests to Gemini API |
+| **Replay / Cached Calls** | **0** | Served from zero-cost local disk replay cache |
+| **Total Prompt Tokens** | **2,415** | Measured from `response.usage_metadata.prompt_token_count` |
+| **Total Output Tokens** | **1,391** | Measured from `response.usage_metadata.candidates_token_count` |
+| **Total Tokens** | **3,806** | Input + Output |
+| **Average Prompt Tokens / Call** | **805.0** | |
+| **Average Output Tokens / Call** | **463.7** | |
+| **Average Tokens / Call** | **1268.7** | |
+| **Total Estimated Cost** | **$0.00080** | Published pricing: $0.10/1M input, $0.40/1M output |
+| **Average Cost / Call** | **$0.00027** | |
 
 ---
 
-## 2. Infrastructure & Execution Instructions
+## 2. Model Breakdown
 
-A real model client wrapper using the official `google-genai` SDK is implemented at [`code/llm_client.py`](file:///code/llm_client.py).
+| Model | Calls | Share |
+|---|---|---|
+| `gemini-3.8-flash` | 3 | 100.0% |
 
-To execute live model calls for all 11 images and 4 PDFs:
-1. Export a valid API key:
-   ```bash
-   export GEMINI_API_KEY="your-api-key"
-   ```
-   or add `GEMINI_API_KEY=...` to a local, uncommitted `.env` file.
-2. Run live extraction:
-   ```bash
-   python code/extract_unstructured.py --model gemini-2.5-flash
-   ```
-3. Regenerate this report from the resulting ledger:
-   ```bash
-   python code/evaluation/generate_usage_report.py
-   ```
+---
 
-When no API key is supplied, the pipeline executes deterministically using SQL snapshot parsing, trace extraction, and structured log indexing across all 94 evidence files.
+## 3. Pricing Model & Assumptions
+
+Pricing is based on Google's published rates for Gemini Flash models:
+- **Prompt (Input)**: $0.10 per 1,000,000 tokens
+- **Candidates (Output)**: $0.40 per 1,000,000 tokens
+- **Cached Replay**: $0.00 (served locally from disk)
+
+All token counts are recorded directly from the API response usage metadata object via `code/llm_client.py`. No synthetic or hand-typed token counts are permitted.

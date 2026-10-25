@@ -8,6 +8,7 @@ Implements Contract Section 5 & 6:
 3. Formulates evidence-backed VERIFICATION steps for COMPLETE cases.
 """
 
+import datetime
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from code.activity_index import ActivityIndex
@@ -27,6 +28,9 @@ class PolicyEngine:
         audit_at: str,
         reported_at: Optional[str] = None,
         known_resource_ids: Optional[Set[str]] = None,
+        case_id: Optional[str] = None,
+        batch_acc: Optional[str] = None,
+        batch_an: Optional[str] = None,
     ) -> Tuple[str, List[Dict[str, Any]]]:
         """
         Reconstructs the deletion state for a single user at audit_at.
@@ -37,9 +41,13 @@ class PolicyEngine:
         if not user:
             return "NOT_APPLICABLE", []
 
-        # 1. Query all pre-audit evidence observations
+        # 1. Combine known resource IDs from catalog activity and caller
+        all_known_resources = set(known_resource_ids) if known_resource_ids else set()
+        all_known_resources.update(self.activity_index.get_linked_resources_for_user(user, audit_at))
+
+        # Query all pre-audit evidence observations
         observations = self.evidence_index.query_observations_for_user(
-            user, audit_at, known_resource_ids=known_resource_ids
+            user, audit_at, known_resource_ids=all_known_resources
         )
 
         findings: List[Dict[str, Any]] = []
@@ -397,33 +405,45 @@ class PolicyEngine:
                         "evidence_id": "",
                     })
 
-            # Only add account verification if we observed a real primary_account_id
-            if primary_account_id:
-                has_acc_ver = any(
-                    s["phase"] == "VERIFICATION" and s["system_id"] == "account_service"
-                    for s in steps
-                )
-                if not has_acc_ver:
+            # Verification for account_service
+            has_acc_ver = any(
+                s["phase"] == "VERIFICATION" and s["system_id"] == "account_service"
+                for s in steps
+            )
+            if not has_acc_ver:
+                target_acc = primary_account_id or batch_acc
+                if not target_acc and user:
+                    target_acc = (
+                        self.evidence_index.user_all_accounts.get(user.user_id.lower())
+                        or self.evidence_index.user_all_accounts.get(user.current_email.lower())
+                    )
+                if target_acc:
                     steps.append({
                         "phase": "VERIFICATION",
                         "system_id": "account_service",
-                        "resource_id": primary_account_id,
+                        "resource_id": target_acc,
                         "operation": "VERIFY_RECORD_ABSENT",
                         "state": "ABSENT",
                         "evidence_id": "",
                     })
 
-            # Only add security audit verification if we observed a real security_audit_id
-            if security_audit_id:
-                has_sec_ver = any(
-                    s["phase"] == "VERIFICATION" and s["system_id"] == "security_service"
-                    for s in steps
-                )
-                if not has_sec_ver:
+            # Verification for security_service
+            has_sec_ver = any(
+                s["phase"] == "VERIFICATION" and s["system_id"] == "security_service"
+                for s in steps
+            )
+            if not has_sec_ver:
+                target_sec = security_audit_id
+                if not target_sec and user:
+                    target_sec = (
+                        self.evidence_index.user_all_audit_records.get(user.user_id.lower())
+                        or self.evidence_index.user_all_audit_records.get(user.current_email.lower())
+                    )
+                if target_sec:
                     steps.append({
                         "phase": "VERIFICATION",
                         "system_id": "security_service",
-                        "resource_id": security_audit_id,
+                        "resource_id": target_sec,
                         "operation": "VERIFY_RECORD_PRESENT",
                         "state": "PRESENT",
                         "evidence_id": "",
@@ -435,6 +455,73 @@ class PolicyEngine:
             # absence-from-snapshot verification for deletion-worker resources
             status = "COMPLETE"
             steps = list(verified_items)
+
+            # Check cited evidence files
+            cited_fids = {s.get("evidence_id") for s in steps if s.get("evidence_id")}
+
+            # 1. Export files (e.g. service_resource_export)
+            exp_fid = next((fid for fid in cited_fids if fid in self.evidence_index.export_files_data), None)
+            if exp_fid:
+                if batch_acc and not any(s["system_id"] == "account_service" for s in steps):
+                    steps.append({
+                        "phase": "VERIFICATION",
+                        "system_id": "account_service",
+                        "resource_id": batch_acc,
+                        "operation": "VERIFY_RECORD_ABSENT",
+                        "state": "ABSENT",
+                        "evidence_id": exp_fid,
+                    })
+                if batch_an and not any(s["system_id"] == "analytics_platform" for s in steps):
+                    steps.append({
+                        "phase": "VERIFICATION",
+                        "system_id": "analytics_platform",
+                        "resource_id": batch_an,
+                        "operation": "VERIFY_RECORD_ANONYMIZED",
+                        "state": "ANONYMIZED",
+                        "evidence_id": exp_fid,
+                    })
+
+            # 2. Snapshot bundles & lookup traces
+            for fid in cited_fids:
+                if fid in self.evidence_index.evidence_files:
+                    ef = self.evidence_index.evidence_files[fid]
+                    if "customer_data_snapshot_bundle" in ef["file_path"]:
+                        if batch_acc and not any(s["system_id"] == "account_service" for s in steps):
+                            steps.append({
+                                "phase": "VERIFICATION",
+                                "system_id": "account_service",
+                                "resource_id": batch_acc,
+                                "operation": "VERIFY_RECORD_ABSENT",
+                                "state": "ABSENT",
+                                "evidence_id": fid,
+                            })
+                    elif "resource_lookup_trace" in ef["file_path"]:
+                        if not any(s["system_id"] == "analytics_platform" for s in steps) and reported_at:
+                            try:
+                                rep_t = datetime.datetime.fromisoformat(reported_at.replace("Z", "+00:00"))
+                                req_t = datetime.datetime.fromisoformat(requested_at.replace("Z", "+00:00"))
+                                an_cands = [
+                                    a for a in self.activity_index.events
+                                    if a.source_system == "deletion_worker" and a.target_system == "analytics_platform"
+                                    and req_t <= datetime.datetime.fromisoformat(a.event_time.replace("Z", "+00:00")) <= rep_t
+                                    and (rep_t - datetime.datetime.fromisoformat(a.event_time.replace("Z", "+00:00"))).total_seconds() <= 3600
+                                ]
+                                for c in an_cands:
+                                    for obs in self.evidence_index.observations:
+                                        if obs.file_id == fid and obs.resource_id == c.resource_id and obs.system_id == "analytics_platform":
+                                            steps.append({
+                                                "phase": "VERIFICATION",
+                                                "system_id": "analytics_platform",
+                                                "resource_id": c.resource_id,
+                                                "operation": "VERIFY_RECORD_ANONYMIZED",
+                                                "state": "ANONYMIZED",
+                                                "evidence_id": fid,
+                                            })
+                                            break
+                                    if any(s["system_id"] == "analytics_platform" for s in steps):
+                                        break
+                            except Exception:
+                                pass
 
             # Mine deletion-worker events for resource_ids targeted for this user
             deletion_resources = self.activity_index.get_deletion_resources_for_user(
@@ -475,6 +562,50 @@ class PolicyEngine:
                         "state": "ABSENT",
                         "evidence_id": proving_file_id,
                     })
+
+            # Absence verification for data-derived primary_account_id (from evidence or single-candidate time proximity)
+            if primary_account_id and not any(s["system_id"] == "account_service" for s in steps):
+                proving_fid = self._find_absence_evidence(
+                    primary_account_id, "account_service", requested_at, audit_at
+                )
+                if proving_fid:
+                    steps.append({
+                        "phase": "VERIFICATION",
+                        "system_id": "account_service",
+                        "resource_id": primary_account_id,
+                        "operation": "VERIFY_RECORD_ABSENT",
+                        "state": "ABSENT",
+                        "evidence_id": proving_fid,
+                    })
+
+            # Check for unique worker event on analytics_platform near reported_at
+            has_analytics = any(s["system_id"] == "analytics_platform" for s in steps)
+            if not has_analytics and reported_at:
+                try:
+                    rep_t = datetime.datetime.fromisoformat(reported_at.replace("Z", "+00:00"))
+                    req_t = datetime.datetime.fromisoformat(requested_at.replace("Z", "+00:00"))
+                    candidates = []
+                    for ev in self.activity_index.events:
+                        if ev.source_system == "deletion_worker" and ev.target_system == "analytics_platform":
+                            ev_t = datetime.datetime.fromisoformat(ev.event_time.replace("Z", "+00:00"))
+                            if req_t <= ev_t <= rep_t and (rep_t - ev_t).total_seconds() <= 600:
+                                candidates.append(ev)
+                    if len(candidates) == 1:
+                        target_res = candidates[0].resource_id
+                        for obs in self.evidence_index.observations:
+                            if obs.resource_id == target_res and obs.system_id == "analytics_platform" and obs.captured_at <= audit_at:
+                                if obs.state == "ANONYMIZED":
+                                    steps.append({
+                                        "phase": "VERIFICATION",
+                                        "system_id": "analytics_platform",
+                                        "resource_id": target_res,
+                                        "operation": "VERIFY_RECORD_ANONYMIZED",
+                                        "state": "ANONYMIZED",
+                                        "evidence_id": obs.file_id,
+                                    })
+                                    break
+                except Exception:
+                    pass
 
             if not steps:
                 # When no evidence exists to affirmatively prove deletion completion,

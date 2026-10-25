@@ -30,7 +30,7 @@ from pydantic import BaseModel, Field
 dotenv.load_dotenv()
 
 PROMPT_VERSION = "v1.0"
-DEFAULT_MODEL = "gemini-2.5-flash"
+DEFAULT_MODEL = "gemini-3.8-flash"
 
 # Cache paths
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -43,7 +43,7 @@ LEDGER_FILE = CACHE_DIR / "usage_ledger.json"
 
 class ExtractedResource(BaseModel):
     system_id: str = Field(description="Name of the service or system (e.g. account_service, support_platform, search_service)")
-    resource_id: str = Field(description="Identifier of the record or entity (e.g. support_1034, account_022, export_9989)")
+    resource_id: str = Field(description="Identifier of the record or entity")
     identifiers: List[str] = Field(default_factory=list, description="Any personal identifiers linked to this resource (email, phone, name, customer_ref, hash)")
     timestamp: Optional[str] = Field(default=None, description="Timestamp associated with this resource if present in the document")
     status: Optional[str] = Field(default=None, description="Reported status or state (e.g. active, closed, pending, present)")

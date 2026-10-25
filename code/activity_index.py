@@ -10,10 +10,11 @@ Tracks:
 
 import csv
 import datetime
+import itertools
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from code.identity_resolver import UserIdentity
 
@@ -35,6 +36,7 @@ class ActivityIndex:
         self.activity_csv_path = activity_csv_path
         self.events: List[ActivityEvent] = []
         self.events_by_resource: Dict[str, List[ActivityEvent]] = {}
+        self.user_linked_resources: Dict[str, List[Tuple[str, str]]] = {}
         self._load_activities()
 
     def _load_activities(self) -> None:
@@ -57,6 +59,31 @@ class ActivityIndex:
                     if res_id not in self.events_by_resource:
                         self.events_by_resource[res_id] = []
                     self.events_by_resource[res_id].append(ev)
+
+                # Track identity linking events (e.g. data_catalog LINK_RESOURCE_IDENTITY)
+                if ev.event_type == "LINK_RESOURCE_IDENTITY" or "catalog linked" in ev.details.lower() or "belongs only to" in ev.details.lower():
+                    for uid_match in re.findall(r"\b(user_\d+)\b", ev.details, re.IGNORECASE):
+                        uid_key = uid_match.lower()
+                        if uid_key not in self.user_linked_resources:
+                            self.user_linked_resources[uid_key] = []
+                        self.user_linked_resources[uid_key].append((ev.resource_id, ev.event_time))
+                    for email_match in re.findall(r"[\w\.-]+@[\w\.-]+\.\w+", ev.details):
+                        em_key = email_match.lower()
+                        if em_key not in self.user_linked_resources:
+                            self.user_linked_resources[em_key] = []
+                        self.user_linked_resources[em_key].append((ev.resource_id, ev.event_time))
+
+    def get_linked_resources_for_user(
+        self, user: UserIdentity, audit_at: str
+    ) -> Set[str]:
+        """Finds resource_ids explicitly linked to user via catalog activity up to audit_at."""
+        res = set()
+        keys = [user.user_id.lower()] + [e.lower() for e in user.all_emails]
+        for k in keys:
+            for rid, t in self.user_linked_resources.get(k, []):
+                if t <= audit_at:
+                    res.add(rid)
+        return res
 
     def get_user_events_in_window(
         self, user: UserIdentity, t_start: str, t_end: str
@@ -129,18 +156,13 @@ class ActivityIndex:
     ) -> Dict[str, List["ActivityEvent"]]:
         """Finds resource_ids that deletion_worker targeted for this user.
 
+        Only data-derived links are used:
+          - user_id literal in event details
+          - any known email literal in event details
+        Synthetic account ID construction (account_{n:03d} etc.) has been removed.
+
         Returns: Dict mapping resource_id -> list of deletion_worker events for it.
         """
-        # Build candidate set of resource_ids linked to user
-        # Convention: user_NNN -> account_NNN (with optional zero-padding)
-        candidate_accounts = set()
-        num_part = user.user_id.replace("user_", "")
-        if num_part.isdigit():
-            n = int(num_part)
-            candidate_accounts.add(f"account_{n:03d}")
-            candidate_accounts.add(f"account_{n}")
-            candidate_accounts.add(f"account_{n:04d}")
-
         result: Dict[str, List[ActivityEvent]] = {}
         for ev in self.events:
             if ev.event_time < requested_at or ev.event_time > audit_at:
@@ -148,18 +170,15 @@ class ActivityIndex:
             if ev.source_system != "deletion_worker":
                 continue
 
-            # Check if event is linked to this user
+            # Check if event is linked to this user via explicit identifier in details
             details_lower = ev.details.lower()
             is_linked = False
 
             # Direct user_id mention in details
             if user.user_id.lower() in details_lower:
                 is_linked = True
-            # Email mention
+            # Any known email mention in details
             elif any(e in details_lower for e in user.all_emails):
-                is_linked = True
-            # Resource_id matches the conventional account pattern
-            elif ev.resource_id in candidate_accounts:
                 is_linked = True
 
             if is_linked and ev.resource_id:
@@ -207,5 +226,162 @@ class ActivityIndex:
         if len(candidates) == 1:
             return candidates[0].resource_id
         return None
+
+    def resolve_batch_worker_resources(
+        self,
+        all_requests: List[Dict[str, str]],
+        resolver: Any,
+        export_files_data: Dict[str, Any],
+        user_all_accounts: Dict[str, str],
+    ) -> Tuple[Dict[str, str], Dict[str, str]]:
+        """
+        Reconstructs the deletion_worker queue and resource assignment for batch requests.
+        Maps each request case_id to its assigned primary account_service resource and
+        analytics_platform resource based on FIFO processing order and reported status.
+        """
+        worker_acc_events = [
+            a for a in self.events
+            if a.source_system == "deletion_worker"
+            and a.target_system == "account_service"
+            and a.event_type == "DELETE_RECORD"
+        ]
+        worker_an_events = [
+            a for a in self.events
+            if a.source_system == "deletion_worker"
+            and a.target_system == "analytics_platform"
+            and a.event_type == "ANONYMIZE_RECORD"
+        ]
+
+        status_to_result = {
+            "COMPLETE": "SUCCESS",
+            "PARTIALLY_COMPLETE": "PARTIAL",
+            "NOT_STARTED": "FAILED",
+        }
+
+        batch_groups: Dict[str, List[Dict[str, str]]] = {}
+        for r in all_requests:
+            rep = r.get("reported_at", "").strip()
+            if rep:
+                batch_groups.setdefault(rep, []).append(r)
+
+        case_batch_acc: Dict[str, str] = {}
+        case_batch_an: Dict[str, str] = {}
+
+        def _diff_sec(t1: str, t2: str) -> float:
+            try:
+                d1 = datetime.datetime.fromisoformat(t1.replace("Z", "+00:00"))
+                d2 = datetime.datetime.fromisoformat(t2.replace("Z", "+00:00"))
+                return abs((d1 - d2).total_seconds())
+            except Exception:
+                return 999999.0
+
+        for rep_at, req_list in batch_groups.items():
+            req_list_sorted = sorted(req_list, key=lambda r: (r["requested_at"], r["email"].lower()))
+
+            try:
+                rep_t = datetime.datetime.fromisoformat(rep_at.replace("Z", "+00:00"))
+                acc_events = [
+                    a for a in worker_acc_events
+                    if 0 <= (rep_t - datetime.datetime.fromisoformat(a.event_time.replace("Z", "+00:00"))).total_seconds() <= 5400
+                ]
+                acc_events.sort(key=lambda a: a.event_time)
+
+                an_events = [
+                    a for a in worker_an_events
+                    if 0 <= (rep_t - datetime.datetime.fromisoformat(a.event_time.replace("Z", "+00:00"))).total_seconds() <= 5400
+                ]
+                an_events.sort(key=lambda a: a.event_time)
+            except Exception:
+                continue
+
+            used_accs: Set[str] = set()
+            used_ans: Set[str] = set()
+            req_assigned_acc: Dict[str, str] = {}
+            req_assigned_an: Dict[str, str] = {}
+
+            # 1. Bind known accounts from evidence
+            for r in req_list_sorted:
+                u = resolver.resolve_by_email(r["email"])
+                k_acc = None
+                if u:
+                    k_acc = user_all_accounts.get(u.user_id.lower()) or user_all_accounts.get(u.current_email.lower())
+                    if not k_acc:
+                        for e in u.all_emails:
+                            if e.lower() in user_all_accounts:
+                                k_acc = user_all_accounts[e.lower()]
+                                break
+                if k_acc and any(a.resource_id == k_acc for a in acc_events):
+                    req_assigned_acc[r["case_id"]] = k_acc
+                    used_accs.add(k_acc)
+
+            # 2. For export files, bind security audit users to export 404 accounts & analytics
+            for r in req_list_sorted:
+                cid = r["case_id"]
+                u = resolver.resolve_by_email(r["email"])
+                if not u:
+                    continue
+                for fid, exp_info in export_files_data.items():
+                    if u.user_id in exp_info["sec_users"]:
+                        acc = req_assigned_acc.get(cid)
+                        if not acc:
+                            cands = [
+                                a.resource_id for a in acc_events
+                                if a.resource_id in exp_info["acc_404"] and a.resource_id not in used_accs
+                            ]
+                            if cands:
+                                acc = cands[0]
+                                req_assigned_acc[cid] = acc
+                                used_accs.add(acc)
+
+                        if acc and an_events:
+                            batch_acc_in_exp = [a.resource_id for a in acc_events if a.resource_id in exp_info["acc_404"]]
+                            batch_an_in_exp = [a.resource_id for a in an_events if a.resource_id in exp_info["an_anon"]]
+
+                            if len(batch_acc_in_exp) == 1 and len(batch_an_in_exp) == 1:
+                                req_assigned_an[cid] = batch_an_in_exp[0]
+                                used_ans.add(batch_an_in_exp[0])
+                            elif len(batch_acc_in_exp) > 1 and len(batch_an_in_exp) == len(batch_acc_in_exp):
+                                acc_times = exp_info.get("acc_obs_times", {})
+                                an_times = exp_info.get("an_obs_times", {})
+                                best_perm = None
+                                best_cost = float("inf")
+                                for perm in itertools.permutations(batch_an_in_exp):
+                                    cost = sum(_diff_sec(acc_times.get(ac, ""), an_times.get(an, "")) for ac, an in zip(batch_acc_in_exp, perm))
+                                    if cost < best_cost:
+                                        best_cost = cost
+                                        best_perm = perm
+                                if best_perm:
+                                    pairing = dict(zip(batch_acc_in_exp, best_perm))
+                                    if acc in pairing:
+                                        target_an = pairing[acc]
+                                        req_assigned_an[cid] = target_an
+                                        used_ans.add(target_an)
+                        break
+
+            # 3. For remaining requests, match accounts by reported_status <-> reported_result in FIFO order
+            unassigned_reqs = [r for r in req_list_sorted if r["case_id"] not in req_assigned_acc]
+            rem_accs = [a for a in acc_events if a.resource_id not in used_accs]
+
+            for exp_res in ["SUCCESS", "PARTIAL", "FAILED"]:
+                sub_reqs = [r for r in unassigned_reqs if status_to_result.get(r.get("reported_status")) == exp_res]
+                sub_evs = [a for a in rem_accs if a.reported_result == exp_res]
+                for r, a in zip(sub_reqs, sub_evs):
+                    req_assigned_acc[r["case_id"]] = a.resource_id
+                    used_accs.add(a.resource_id)
+                    unassigned_reqs.remove(r)
+                    rem_accs.remove(a)
+
+            # 4. Any leftover accounts matched in FIFO order
+            for r, a in zip(unassigned_reqs, rem_accs):
+                req_assigned_acc[r["case_id"]] = a.resource_id
+                used_accs.add(a.resource_id)
+
+            # 5. Populate case_batch_acc and case_batch_an
+            for cid, acc in req_assigned_acc.items():
+                case_batch_acc[cid] = acc
+            for cid, an in req_assigned_an.items():
+                case_batch_an[cid] = an
+
+        return case_batch_acc, case_batch_an
 
 
