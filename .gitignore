@@ -1,0 +1,18 @@
+# Environment variables & secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+venv/
+ENV/
+
+# Scratch & temporary test directories
+scratch/
+code/cache/replay_cache.json
+code/cache/usage_ledger.json
